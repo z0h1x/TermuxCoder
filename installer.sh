@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ===================== CONFIG =====================
-CS_VERSION="4.107.0"
+CS_VERSION="4.111.0"
 CS_DIR="code-server-${CS_VERSION}-linux-arm64"
 CS_URL="https://github.com/coder/code-server/releases/download/v${CS_VERSION}/${CS_DIR}.tar.gz"
 PASSWORD="zohir530"
@@ -45,7 +45,7 @@ progress_bar() {
 # ===================== WELCOME =====================
 clear
 echo -e "${CYAN}"
-bold "Welcome to ${MAGENTA}z0h1x${CYAN} VS Code (Code-Server) Installer"
+bold "Welcome to ${MAGENTA}z0h1x${CYAN} Code Server Installer"
 echo -e "${YELLOW}Version: ${CS_VERSION}${NC}\n"
 bold "INSTALLING...\n"
 
@@ -126,15 +126,15 @@ while true; do
     echo -e "\${NC}"
 
     choice=\$(dialog --stdout --menu "z0h1x Control Panel" 15 60 6 \
-        1 "Start VS Code" \
+        1 "Start Code Server" \
         2 "Debug Mode (Verbose)" \
-        3 "Stop VS Code" \
+        3 "Stop Code Server" \
         4 "Exit")
 
     case \$choice in
         1)
             clear
-            echo -e "\${YELLOW}Starting VS Code...\${NC}"
+            echo -e "\${YELLOW}Starting Code Server...\${NC}"
             proot-distro login ubuntu -- bash -c "
 cd ~/\$CS_DIR/bin
 export PASSWORD=\$PASSWORD
@@ -154,7 +154,7 @@ export PASSWORD=\$PASSWORD
             ;;
         3)
             clear
-            echo -e "\${RED}Stopping VS Code...\${NC}"
+            echo -e "\${RED}Stopping Code Server...\${NC}"
             proot-distro login ubuntu -- pkill -f code-server || true
             echo "Stopped (if running)."
             read -p 'Press Enter...'

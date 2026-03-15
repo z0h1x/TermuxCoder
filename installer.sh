@@ -68,7 +68,7 @@ progress_bar 0.01 "Downloading / Updating Code-Server" "
 cd $INSTALL_DIR
 if [ ! -d \"$CS_DIR\" ]; then
     wget -q \"$CS_URL\" -O \"$CS_DIR.tar.gz\"
-    tar -xf \"$CS_DIR.tar.gz\"
+    tar -xzf "$CS_DIR.tar.gz" --hard-dereference
 else
     echo \"Code-server already installed. Checking for updates...\"
     rm -rf $CS_DIR

@@ -1,6 +1,6 @@
-# CodePlex 4.111.0 updated 😼
+# TermuxCoder 4.111.0 updated 😼
 
-**CodePlex** is a simple installer for Visual Studio Code (Code-Server) on Termux. Get your dev environment up and running in minutes, straight from your terminal.
+**TermuxCoder** is a simple installer for Visual Studio Code (Code-Server) on Termux. Get your dev environment up and running in minutes, straight from your terminal.
 
 
 ---
@@ -37,7 +37,7 @@ pkg upgrade
 
 # Download and run the installer
 ```bash
-curl -fsSL https://raw.githubusercontent.com/z0h1x/CodePlex/main/installer.sh | bash
+curl -fsSL https://raw.githubusercontent.com/z0h1x/TermuxCoder/main/installer.sh | bash
 ```
 # Last step !
 -# if the installer finished the installation 

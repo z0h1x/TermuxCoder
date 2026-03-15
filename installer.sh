@@ -1,10 +1,9 @@
 #!/bin/bash
 
 # ===================== CONFIG =====================
-# Automatically fetch the latest Code-Server version from GitHub
-CS_VERSION=$(curl -s https://api.github.com/repos/coder/code-server/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
+CS_VERSION="4.111.0"
 CS_DIR="code-server-${CS_VERSION}-linux-arm64"
-CS_URL="https://github.com/coder/code-server/releases/download/${CS_VERSION}/${CS_DIR}.tar.gz"
+CS_URL="https://github.com/coder/code-server/releases/download/v${CS_VERSION}/${CS_DIR}.tar.gz"
 PASSWORD="zohir530"
 
 HOME_DIR="/data/data/com.termux/files/home"
@@ -47,7 +46,7 @@ progress_bar() {
 clear
 echo -e "${CYAN}"
 bold "Welcome to ${MAGENTA}z0h1x${CYAN} Code Server Installer"
-echo -e "${YELLOW}Latest Version: ${CS_VERSION}${NC}\n"
+echo -e "${YELLOW}Version: ${CS_VERSION}${NC}\n"
 bold "INSTALLING...\n"
 
 # ===================== TERMUX DEPS =====================
@@ -78,9 +77,6 @@ proot-distro login ubuntu -- bash -c '
 set -e
 apt update -y
 apt upgrade -y
-apt install curl -y
-apt install jq -y
-apt install gzip -y
 apt install -y wget tar
 cd ~
 
@@ -89,12 +85,100 @@ if [ ! -d \"$CS_DIR\" ]; then
     tar -xf \"$CS_DIR.tar.gz\"
 else
     echo \"Code-server already exists\"
-    curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
 fi
 '
 "
 
 # ===================== MENU SCRIPT =====================
+cat > "$MENU_FILE" << EOF
+#!/bin/bash
+
+CS_DIR="$CS_DIR"
+PASSWORD="$PASSWORD"
+
+RED='\\033[0;31m'
+GREEN='\\033[0;32m'
+YELLOW='\\033[0;33m'
+BLUE='\\033[0;34m'
+CYAN='\\033[0;36m'
+NC='\\033[0m'
+
+center_text() {
+    local w=\$(tput cols)
+    while IFS= read -r line; do
+        printf "%*s%s\n" \$(((w-\${#line})/2)) "" "\$line"
+    done
+}
+
+banner='
+███████╗░█████╗░██╗░░██╗░░███╗░░██╗░░██╗
+╚════██║██╔══██╗██║░░██║░████║░░╚██╗██╔╝
+░░███╔═╝██║░░██║███████║██╔██║░░░╚███╔╝░
+██╔══╝░░██║░░██║██╔══██║╚═╝██║░░░██╔██╗░
+███████╗╚█████╔╝██║░░██║███████╗██╔╝╚██╗
+╚══════╝░╚════╝░╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝
+'
+
+while true; do
+    clear
+    echo -e "\${CYAN}"
+    echo "\$banner" | center_text
+    echo -e "\${NC}"
+
+    choice=\$(dialog --stdout --menu "z0h1x Control Panel" 15 60 6 \
+        1 "Start Code Server" \
+        2 "Debug Mode (Verbose)" \
+        3 "Stop Code Server" \
+        4 "Exit")
+
+    case \$choice in
+        1)
+            clear
+            echo -e "\${YELLOW}Starting Code Server...\${NC}"
+            proot-distro login ubuntu -- bash -c "
+cd ~/\$CS_DIR/bin
+export PASSWORD=\$PASSWORD
+nohup ./code-server > ~/code-server.log 2>&1 &
+"
+            echo -e "\${GREEN}Running → http://localhost:8080\${NC}"
+            read -p 'Press Enter...'
+            ;;
+        2)
+            clear
+            echo -e "\${BLUE}Debug Mode (Ctrl+C to stop)\${NC}"
+            proot-distro login ubuntu -- bash -c "
+cd ~/\$CS_DIR/bin
+export PASSWORD=\$PASSWORD
+./code-server
+"
+            ;;
+        3)
+            clear
+            echo -e "\${RED}Stopping Code Server...\${NC}"
+            proot-distro login ubuntu -- pkill -f code-server || true
+            echo "Stopped (if running)."
+            read -p 'Press Enter...'
+            ;;
+        4)
+            clear
+            exit 0
+            ;;
+    esac
+done
+EOF
+
+chmod +x "$MENU_FILE"
+
+# ===================== LAUNCHER =====================
+cat > "$LAUNCHER" << EOF
+#!/bin/bash
+bash "$MENU_FILE"
+EOF
+
+chmod +x "$LAUNCHER"
+
+bold "\n✅ Installation complete!"
+echo -e "${GREEN}Type 'vscode' to open the control panel.${NC}\n"# ===================== MENU SCRIPT =====================
 cat > "$MENU_FILE" << EOF
 #!/bin/bash
 

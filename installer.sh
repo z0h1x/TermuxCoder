@@ -78,6 +78,9 @@ proot-distro login ubuntu -- bash -c '
 set -e
 apt update -y
 apt upgrade -y
+apt install curl -y
+apt install jq -y
+apt install gzip -y
 apt install -y wget tar
 cd ~
 
@@ -86,6 +89,7 @@ if [ ! -d \"$CS_DIR\" ]; then
     tar -xf \"$CS_DIR.tar.gz\"
 else
     echo \"Code-server already exists\"
+    curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
 fi
 '
 "

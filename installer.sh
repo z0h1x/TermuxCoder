@@ -36,7 +36,6 @@ progress_bar() {
     done
     echo
 
-    # IMPORTANT: do NOT exit on failure
     eval "$command" || echo -e "${YELLOW}⚠ Skipped / already done${NC}"
 
     echo -e "${GREEN}✔ Done${NC}\n"
@@ -77,7 +76,7 @@ proot-distro login ubuntu -- bash -c '
 set -e
 apt update -y
 apt upgrade -y
-apt install -y wget tar
+apt install -y wget tar curl jq gzip
 cd ~
 
 if [ ! -d \"$CS_DIR\" ]; then
@@ -88,7 +87,8 @@ else
 fi
 '
 "
-
+# installing GitHub copilot 
+curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
 # ===================== MENU SCRIPT =====================
 cat > "$MENU_FILE" << EOF
 #!/bin/bash
@@ -158,6 +158,27 @@ export PASSWORD=\$PASSWORD
             proot-distro login ubuntu -- pkill -f code-server || true
             echo "Stopped (if running)."
             read -p 'Press Enter...'
+            ;;
+        4)
+            clear
+            exit 0
+            ;;
+    esac
+done
+EOF
+
+chmod +x "$MENU_FILE"
+
+# ===================== LAUNCHER =====================
+cat > "$LAUNCHER" << EOF
+#!/bin/bash
+bash "$MENU_FILE"
+EOF
+
+chmod +x "$LAUNCHER"
+
+bold "\n✅ Installation complete!"
+echo -e "${GREEN}Type 'vscode' to open the control panel.${NC}\n"s Enter...'
             ;;
         4)
             clear

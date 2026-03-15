@@ -1,63 +1,3 @@
-o
-    clear
-    echo -e "\${CYAN}"
-    echo "\$banner" | center_text
-    echo -e "\${NC}"
-
-    choice=\$(dialog --stdout --menu "z0h1x Control Panel" 15 60 6 \
-        1 "Start Code Server" \
-        2 "Debug Mode (Verbose)" \
-        3 "Stop Code Server" \
-        4 "Exit")
-
-    case \$choice in
-        1)
-            clear
-            echo -e "\${YELLOW}Starting Code Server...\${NC}"
-            proot-distro login ubuntu -- bash -c "
-cd ~/\$CS_DIR/bin
-export PASSWORD=\$PASSWORD
-nohup ./code-server > ~/code-server.log 2>&1 &
-"
-            echo -e "\${GREEN}Running → http://localhost:8080\${NC}"
-            read -p 'Press Enter...'
-            ;;
-        2)
-            clear
-            echo -e "\${BLUE}Debug Mode (Ctrl+C to stop)\${NC}"
-            proot-distro login ubuntu -- bash -c "
-cd ~/\$CS_DIR/bin
-export PASSWORD=\$PASSWORD
-./code-server
-"
-            ;;
-        3)
-            clear
-            echo -e "\${RED}Stopping Code Server...\${NC}"
-            proot-distro login ubuntu -- pkill -f code-server || true
-            echo "Stopped (if running)."
-            read -p 'Press Enter...'
-            ;;
-        4)
-            clear
-            exit 0
-            ;;
-    esac
-done
-EOF
-
-chmod +x "$MENU_FILE"
-
-# ===================== LAUNCHER =====================
-cat > "$LAUNCHER" << EOF
-#!/bin/bash
-bash "$MENU_FILE"
-EOF
-
-chmod +x "$LAUNCHER"
-
-bold "\n✅ Installation complete!"
-echo -e "${GREEN}Type 'vscode' to open the control panel.${NC}\n"
 #!/bin/bash
 
 # ===================== CONFIG =====================
@@ -146,8 +86,8 @@ if [ ! -d '$CS_DIR' ]; then
     tar -xf '$CS_DIR.tar.gz'
 else
     echo 'Code-server already exists'
-fi
 curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
+fi
 \"
 "
 

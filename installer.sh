@@ -91,6 +91,11 @@ proot-distro login ubuntu -- bash -c '
     apt update -y
     apt upgrade -y
     apt install -y wget tar
+    apt install curl
+    apt install jq
+    apt install gzip
+    apt install python3
+    
     cd ~
 
     if [ ! -d \"$CS_DIR\" ]; then

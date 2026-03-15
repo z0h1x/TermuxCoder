@@ -1,7 +1,11 @@
 #!/bin/bash
 
 # ===================== CONFIG =====================
+CS_VERSION="4.111.0"
+CS_DIR="code-server-${CS_VERSION}-linux-arm64"
+CS_URL="https://github.com/coder/code-server/releases/download/v${CS_VERSION}/${CS_DIR}.tar.gz"
 PASSWORD="zohir530"
+
 HOME_DIR="/data/data/com.termux/files/home"
 BIN_DIR="/data/data/com.termux/files/usr/bin"
 MENU_FILE="$HOME_DIR/zohir"
@@ -31,70 +35,64 @@ progress_bar() {
         sleep "$duration"
     done
     echo
+
+    # IMPORTANT: do NOT exit on failure
     eval "$command" || echo -e "${YELLOW}⚠ Skipped / already done${NC}"
+
     echo -e "${GREEN}✔ Done${NC}\n"
 }
 
 # ===================== WELCOME =====================
 clear
 echo -e "${CYAN}"
-bold "Welcome to ${MAGENTA}z0h1x${CYAN} Code Server Installer"
+bold "Welcome to ${MAGENTA}z0h1x${CYAN} VS Code (Code-Server) Installer"
+echo -e "${YELLOW}Version: ${CS_VERSION}${NC}\n"
 bold "INSTALLING...\n"
 
 # ===================== TERMUX DEPS =====================
-if ! command -v proot-distro &>/dev/null; then
-    progress_bar 0.01 "Installing proot-distro" "pkg install -y proot-distro"
-else
+if command -v proot-distro &>/dev/null; then
     echo -e "${GREEN}✔ proot-distro already installed${NC}\n"
+else
+    progress_bar 0.01 "Installing proot-distro" "pkg install -y proot-distro"
 fi
 
-if ! command -v dialog &>/dev/null; then
-    progress_bar 0.01 "Installing dialog" "pkg install -y dialog"
-else
+if command -v dialog &>/dev/null; then
     echo -e "${GREEN}✔ dialog already installed${NC}\n"
+else
+    progress_bar 0.01 "Installing dialog" "pkg install -y dialog"
 fi
 
 # ===================== UBUNTU =====================
 echo -e "${CYAN}Checking Ubuntu installation...${NC}"
-if ! proot-distro list --installed 2>/dev/null | grep -qx "ubuntu"; then
-    progress_bar 0.01 "Installing Ubuntu" "proot-distro install ubuntu"
-else
+
+if proot-distro list --installed 2>/dev/null | grep -qx "ubuntu"; then
     echo -e "${GREEN}✔ Ubuntu already installed — skipping${NC}\n"
+else
+    progress_bar 0.01 "Installing Ubuntu" "proot-distro install ubuntu"
 fi
 
-# ===================== INSTALL CODE-SERVER INSIDE UBUNTU =====================
-progress_bar 0.01 "Setting up Code-Server inside Ubuntu" "
-proot-distro login ubuntu -- bash -c \"
+# ===================== CODE SERVER =====================
+progress_bar 0.01 "Setting up Code-Server" "
+proot-distro login ubuntu -- bash -c '
 set -e
 apt update -y
 apt upgrade -y
-apt install -y wget tar curl jq gzip
-
-# Fetch latest code-server release URL
-CS_URL=\$(curl -s https://api.github.com/repos/coder/code-server/releases/latest | \
-    grep browser_download_url | grep linux-arm64.tar.gz | cut -d '\"' -f4)
-CS_FILE=\$(basename \"\$CS_URL\")
-CS_DIR=\${CS_FILE%.tar.gz}
-
+apt install -y wget tar
 cd ~
-if [ ! -d \"\$CS_DIR\" ]; then
-    echo 'Downloading code-server...'
-    wget -q \"\$CS_URL\" -O \"\$CS_FILE\" &&
-    tar --no-hard-links -xf \"\$CS_FILE\" &&
-    rm \"\$CS_FILE\" &&
-    chmod +x \"\$CS_DIR/bin/code-server\"
-else
-    echo 'Code-server already exists'
-fi
 
-# Install Copilot
-curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
-\" 
+if [ ! -d \"$CS_DIR\" ]; then
+    wget -q \"$CS_URL\"
+    tar -xf \"$CS_DIR.tar.gz\"
+else
+    echo \"Code-server already exists\"
+fi
+'
 "
 
 # ===================== MENU SCRIPT =====================
-cat > "$MENU_FILE" << 'EOF'
+cat > "$MENU_FILE" << EOF
 #!/bin/bash
+
 CS_DIR="$CS_DIR"
 PASSWORD="$PASSWORD"
 
@@ -128,54 +126,47 @@ while true; do
     echo -e "\${NC}"
 
     choice=\$(dialog --stdout --menu "z0h1x Control Panel" 15 60 6 \
-        1 "Start Code Server" \
+        1 "Start VS Code" \
         2 "Debug Mode (Verbose)" \
-        3 "Stop Code Server" \
+        3 "Stop VS Code" \
         4 "Exit")
 
     case \$choice in
-
         1)
             clear
-            echo -e "\${YELLOW}Starting Code Server...\${NC}"
-
+            echo -e "\${YELLOW}Starting VS Code...\${NC}"
             proot-distro login ubuntu -- bash -c "
-cd ~/$CS_DIR/bin
-export PASSWORD=$PASSWORD
+cd ~/\$CS_DIR/bin
+export PASSWORD=\$PASSWORD
 nohup ./code-server > ~/code-server.log 2>&1 &
 "
-
             echo -e "\${GREEN}Running → http://localhost:8080\${NC}"
             read -p 'Press Enter...'
-        ;;
-
+            ;;
         2)
             clear
             echo -e "\${BLUE}Debug Mode (Ctrl+C to stop)\${NC}"
-
             proot-distro login ubuntu -- bash -c "
-cd ~/$CS_DIR/bin
-export PASSWORD=$PASSWORD
+cd ~/\$CS_DIR/bin
+export PASSWORD=\$PASSWORD
 ./code-server
 "
-        ;;
-
+            ;;
         3)
             clear
-            echo -e "\${RED}Stopping Code Server...\${NC}"
+            echo -e "\${RED}Stopping VS Code...\${NC}"
             proot-distro login ubuntu -- pkill -f code-server || true
             echo "Stopped (if running)."
             read -p 'Press Enter...'
-        ;;
-
+            ;;
         4)
             clear
             exit 0
-        ;;
-
+            ;;
     esac
 done
 EOF
+
 chmod +x "$MENU_FILE"
 
 # ===================== LAUNCHER =====================
@@ -183,6 +174,7 @@ cat > "$LAUNCHER" << EOF
 #!/bin/bash
 bash "$MENU_FILE"
 EOF
+
 chmod +x "$LAUNCHER"
 
 bold "\n✅ Installation complete!"

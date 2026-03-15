@@ -18,22 +18,27 @@ NC='\033[0m'
 
 bold() { echo -e "\033[1m$1\033[0m"; }
 
-progress_bar() {
-    local duration=$1
-    local text=$2
-    local command=$3
-    local width=30
-
-    printf "\n%s\n" "$(bold "$text")"
-    for i in $(seq 0 100); do
-        local filled=$((i * width / 100))
-        printf "\r\033[K[%-*s] %3d%%" "$width" "$(printf "%0.s█" $(seq 1 $filled))" "$i"
-        sleep "$duration"
+# ===================== SPINNER FUNCTION =====================
+spinner() {
+    local pid=$1
+    local delay=0.1
+    local spinstr='|/-\'
+    echo -n " "
+    while kill -0 $pid 2>/dev/null; do
+        for i in $(seq 0 3); do
+            printf "\b${spinstr:i:1}"
+            sleep $delay
+        done
     done
-    echo
+    printf "\b"
+}
 
-    eval "$command" || echo -e "${YELLOW}⚠ Skipped / already done${NC}"
-    echo -e "${GREEN}✔ Done${NC}\n"
+run_with_spinner() {
+    local cmd="$1"
+    bash -c "$cmd" &
+    local pid=$!
+    spinner $pid
+    wait $pid
 }
 
 # ===================== WELCOME =====================
@@ -44,38 +49,32 @@ echo -e "${YELLOW}Auto-update enabled${NC}\n"
 bold "INSTALLING / UPDATING...\n"
 
 # ===================== TERMUX DEPENDENCIES =====================
-progress_bar 0.01 "Installing essential packages" "
-pkg update -y
-pkg upgrade -y
-pkg install -y wget tar dialog git nodejs python clang make pkg-config openssl curl unzip jq
-"
+echo -e "${YELLOW}Installing essential packages...${NC}"
+run_with_spinner "pkg update -y && pkg upgrade -y && pkg install -y wget tar dialog git nodejs python clang make pkg-config openssl curl unzip jq"
 
 # ===================== AUTO-CHECK LATEST CODE-SERVER =====================
-bold "Checking latest Code-Server version..."
+echo -e "${YELLOW}Checking latest Code-Server version...${NC}"
 CS_VERSION=$(curl -s https://api.github.com/repos/coder/code-server/releases/latest | jq -r '.tag_name' | sed 's/v//')
 CS_DIR="code-server-${CS_VERSION}-linux-arm64"
 CS_URL="https://github.com/coder/code-server/releases/download/v${CS_VERSION}/${CS_DIR}.tar.gz"
 bold "Latest version: ${CS_VERSION}"
 
 # ===================== CREATE INSTALL FOLDER =====================
-progress_bar 0.01 "Creating Code-Server folder" "
+echo -e "${YELLOW}Creating Code-Server folder...${NC}"
 mkdir -p $INSTALL_DIR
-cd $INSTALL_DIR
-"
 
 # ===================== DOWNLOAD / UPDATE CODE SERVER =====================
-progress_bar 0.01 "Downloading / Updating Code-Server" "
+echo -e "${YELLOW}Downloading / Updating Code-Server...${NC}"
 cd $INSTALL_DIR
-if [ ! -d \"$CS_DIR\" ]; then
-    wget -q \"$CS_URL\" -O \"$CS_DIR.tar.gz\"
-    tar -xzf "$CS_DIR.tar.gz" --hard-dereference
+if [ ! -d "$CS_DIR" ]; then
+    run_with_spinner "wget -q \"$CS_URL\" -O \"$CS_DIR.tar.gz\""
+    tar -xzf "$CS_DIR.tar.gz" --hard-dereference --warning=no-unknown-keyword || true
 else
-    echo \"Code-server already installed. Checking for updates...\"
+    echo "Code-server already installed. Updating..."
     rm -rf $CS_DIR
-    wget -q \"$CS_URL\" -O \"$CS_DIR.tar.gz\"
-    tar -xf \"$CS_DIR.tar.gz\"
+    run_with_spinner "wget -q \"$CS_URL\" -O \"$CS_DIR.tar.gz\""
+    tar -xzf "$CS_DIR.tar.gz" --hard-dereference --warning=no-unknown-keyword || true
 fi
-"
 
 # ===================== MENU SCRIPT =====================
 cat > "$MENU_FILE" << EOF
@@ -131,10 +130,12 @@ while true; do
             ;;
         2)
             clear
-            echo -e "\${BLUE}Debug Mode (Ctrl+C to stop)\${NC}"
+            echo -e "\${BLUE}Debug Mode (Press Ctrl+C to stop)...${NC}"
             cd "\$CS_DIR/bin"
             export PASSWORD=\$PASSWORD
             ./code-server
+            echo -e "\${GREEN}Code-Server stopped.${NC}"
+            read -p "Press Enter to return to menu..."
             ;;
         3)
             clear

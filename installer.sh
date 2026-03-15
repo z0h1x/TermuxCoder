@@ -1,14 +1,6 @@
 #!/bin/bash
 
-# ===================== CONFIG =====================
-HOME_DIR="$HOME"
-BIN_DIR="/data/data/com.termux/files/usr/bin"
-INSTALL_DIR="$HOME/.code-server"
-MENU_FILE="$HOME_DIR/zohir"
-LAUNCHER="$BIN_DIR/vscode"
-PASSWORD="zohir530"
-# =================================================
-
+# ===================== COLORS =====================
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
@@ -35,118 +27,87 @@ spinner() {
 
 run_with_spinner() {
     local cmd="$1"
-    bash -c "$cmd" &
+    bash -c "$cmd" >/dev/null 2>&1 &
     local pid=$!
     spinner $pid
     wait $pid
 }
 
-# ===================== WELCOME =====================
-clear
-echo -e "${CYAN}"
-bold "Welcome to ${MAGENTA}z0h1x${CYAN} Code Server Installer"
-echo -e "${YELLOW}Auto-update enabled${NC}\n"
-bold "INSTALLING / UPDATING...\n"
+# ===================== USER INPUT =====================
+echo -e "${CYAN}Enter a password for your Code-Server:${NC}"
+read -s -p "Password: " USER_PASSWORD
+echo
 
 # ===================== TERMUX DEPENDENCIES =====================
-echo -e "${YELLOW}Installing essential packages...${NC}"
-run_with_spinner "pkg update -y && pkg upgrade -y && pkg install -y wget tar dialog git nodejs python clang make pkg-config openssl curl unzip jq"
+bold "Installing essential packages..."
+run_with_spinner "pkg update -y && pkg upgrade -y && pkg install -y wget tar dialog git nodejs python clang make pkg-config openssl curl unzip jq tur-repo code-server"
+echo -e "${GREEN}✔ Done!${NC}"
 
-# ===================== AUTO-CHECK LATEST CODE-SERVER =====================
-echo -e "${YELLOW}Checking latest Code-Server version...${NC}"
-CS_VERSION=$(curl -s https://api.github.com/repos/coder/code-server/releases/latest | jq -r '.tag_name' | sed 's/v//')
-CS_DIR="code-server-${CS_VERSION}-linux-arm64"
-CS_URL="https://github.com/coder/code-server/releases/download/v${CS_VERSION}/${CS_DIR}.tar.gz"
-bold "Latest version: ${CS_VERSION}"
+# ===================== PATHS =====================
+CS_BIN="$PREFIX/share/code-server/bin"
+MENU_FILE="$HOME/zohir"
+LAUNCHER="$PREFIX/bin/vscode"
 
-# ===================== CREATE INSTALL FOLDER =====================
-echo -e "${YELLOW}Creating Code-Server folder...${NC}"
-mkdir -p $INSTALL_DIR
-
-# ===================== DOWNLOAD / UPDATE CODE SERVER =====================
-echo -e "${YELLOW}Downloading / Updating Code-Server...${NC}"
-cd $INSTALL_DIR
-if [ ! -d "$CS_DIR" ]; then
-    run_with_spinner "wget -q \"$CS_URL\" -O \"$CS_DIR.tar.gz\""
-    tar -xzf "$CS_DIR.tar.gz" --hard-dereference --warning=no-unknown-keyword || true
-else
-    echo "Code-server already installed. Updating..."
-    rm -rf $CS_DIR
-    run_with_spinner "wget -q \"$CS_URL\" -O \"$CS_DIR.tar.gz\""
-    tar -xzf "$CS_DIR.tar.gz" --hard-dereference --warning=no-unknown-keyword || true
-fi
-
-# ===================== MENU SCRIPT =====================
+# ===================== CREATE MENU =====================
 cat > "$MENU_FILE" << EOF
 #!/bin/bash
 
-CS_DIR="$INSTALL_DIR/$CS_DIR"
-PASSWORD="$PASSWORD"
+CS_BIN="$CS_BIN"
+PASSWORD="$USER_PASSWORD"
 
 RED='\\033[0;31m'
 GREEN='\\033[0;32m'
 YELLOW='\\033[0;33m'
-BLUE='\\033[0;34m'
 CYAN='\\033[0;36m'
 NC='\\033[0m'
 
-center_text() {
-    local w=\$(tput cols)
-    while IFS= read -r line; do
-        printf "%*s%s\n" \$(((w-\${#line})/2)) "" "\$line"
-    done
-}
-
-banner='
-███████╗░█████╗░██╗░░██╗░░███╗░░██╗░░██╗
-╚════██║██╔══██╗██║░░██║░████║░░╚██╗██╔╝
-░░███╔═╝██║░░██║███████║██╔██║░░░╚███╔╝░
-██╔══╝░░██║░░██║██╔══██║╚═╝██║░░░██╔██╗░
-███████╗╚█████╔╝██║░░██║███████╗██╔╝╚██╗
-╚══════╝░╚════╝░╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝
-'
-
 while true; do
     clear
-    echo -e "\${CYAN}"
-    echo "\$banner" | center_text
-    echo -e "\${NC}"
+    echo -e "\${CYAN}==============================${NC}"
+    echo -e "\${MAGENTA}      z0h1x Code-Server Menu      ${NC}"
+    echo -e "\${CYAN}==============================${NC}"
+    echo -e "1 - Start Code-Server"
+    echo -e "2 - Show Verbose (Debug logs)"
+    echo -e "3 - Stop Code-Server"
+    echo -e "0 - Exit (stop server as well)"
+    echo -ne "\nChoice: "
+    read CHOICE
 
-    choice=\$(dialog --stdout --menu "z0h1x Control Panel" 15 60 6 \
-        1 "Start Code Server" \
-        2 "Debug Mode (Verbose)" \
-        3 "Stop Code Server" \
-        4 "Exit")
-
-    case \$choice in
+    case \$CHOICE in
         1)
             clear
-            echo -e "\${YELLOW}Starting Code Server...\${NC}"
-            cd "\$CS_DIR/bin"
-            export PASSWORD=\$PASSWORD
+            echo -e "\${YELLOW}Starting Code-Server...${NC}"
+            cd "\$CS_BIN"
+            export PASSWORD="\$PASSWORD"
             nohup ./code-server > ~/code-server.log 2>&1 &
-            echo -e "\${GREEN}Running → http://localhost:8080\${NC}"
-            read -p 'Press Enter...'
+            echo -e "\${GREEN}Code-Server running at http://localhost:8080${NC}"
+            read -p "Press Enter to return to menu..."
             ;;
         2)
             clear
-            echo -e "\${BLUE}Debug Mode (Press Ctrl+C to stop)...${NC}"
-            cd "\$CS_DIR/bin"
-            export PASSWORD=\$PASSWORD
+            echo -e "\${CYAN}Debug Mode (Press Ctrl+C to stop)...${NC}"
+            cd "\$CS_BIN"
+            export PASSWORD="\$PASSWORD"
             ./code-server
             echo -e "\${GREEN}Code-Server stopped.${NC}"
             read -p "Press Enter to return to menu..."
             ;;
         3)
             clear
-            echo -e "\${RED}Stopping Code Server...\${NC}"
+            echo -e "\${RED}Stopping Code-Server...${NC}"
             pkill -f code-server || true
             echo "Stopped (if running)."
-            read -p 'Press Enter...'
+            read -p "Press Enter to return to menu..."
             ;;
-        4)
+        0)
             clear
+            echo -e "\${RED}Stopping Code-Server and exiting...${NC}"
+            pkill -f code-server || true
             exit 0
+            ;;
+        *)
+            echo -e "\${RED}Invalid option!${NC}"
+            sleep 1
             ;;
     esac
 done
@@ -154,7 +115,7 @@ EOF
 
 chmod +x "$MENU_FILE"
 
-# ===================== LAUNCHER =====================
+# ===================== CREATE LAUNCHER =====================
 cat > "$LAUNCHER" << EOF
 #!/bin/bash
 bash "$MENU_FILE"
@@ -162,5 +123,5 @@ EOF
 
 chmod +x "$LAUNCHER"
 
-bold "\n✅ Installation / Update complete!"
+bold "\n✅ Installation complete!"
 echo -e "${GREEN}Type 'vscode' to open the control panel.${NC}\n"

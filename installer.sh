@@ -1,19 +1,25 @@
 #!/bin/bash
 
 # ===================== CONFIG =====================
-# Automatically fetch the latest Code-Server version from GitHub
-CS_VERSION=$(curl -s https://api.github.com/repos/coder/code-server/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
-CS_DIR="code-server-${CS_VERSION}-linux-arm64"
-CS_URL="https://github.com/coder/code-server/releases/download/${CS_VERSION}/${CS_DIR}.tar.gz"
+
+# Get latest Code-Server asset automatically
+CS_URL=$(curl -s https://api.github.com/repos/coder/code-server/releases/latest | grep browser_download_url | grep linux-arm64.tar.gz | cut -d '"' -f 4)
+
+CS_FILE=$(basename "$CS_URL")
+CS_DIR="${CS_FILE%.tar.gz}"
+
 PASSWORD="zohir530"
 
 HOME_DIR="/data/data/com.termux/files/home"
 BIN_DIR="/data/data/com.termux/files/usr/bin"
 MENU_FILE="$HOME_DIR/zohir"
 LAUNCHER="$BIN_DIR/vscode"
+
 # =================================================
 
-# Colors
+
+# ===================== COLORS =====================
+
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
@@ -23,6 +29,9 @@ NC='\033[0m'
 
 bold() { echo -e "\033[1m$1\033[0m"; }
 
+
+# ===================== PROGRESS =====================
+
 progress_bar() {
     local duration=$1
     local text=$2
@@ -30,27 +39,31 @@ progress_bar() {
     local width=30
 
     printf "\n%s\n" "$(bold "$text")"
+
     for i in $(seq 0 100); do
         local filled=$((i * width / 100))
         printf "\r\033[K[%-*s] %3d%%" "$width" "$(printf "%0.s█" $(seq 1 $filled))" "$i"
         sleep "$duration"
     done
+
     echo
-
-    # IMPORTANT: do NOT exit on failure
     eval "$command" || echo -e "${YELLOW}⚠ Skipped / already done${NC}"
-
     echo -e "${GREEN}✔ Done${NC}\n"
 }
 
+
 # ===================== WELCOME =====================
+
 clear
 echo -e "${CYAN}"
 bold "Welcome to ${MAGENTA}z0h1x${CYAN} Code Server Installer"
-echo -e "${YELLOW}Latest Version: ${CS_VERSION}${NC}\n"
+echo -e "${YELLOW}Downloading latest Code Server...${NC}"
+echo -e "${CYAN}$CS_URL${NC}\n"
 bold "INSTALLING...\n"
 
+
 # ===================== TERMUX DEPS =====================
+
 if command -v proot-distro &>/dev/null; then
     echo -e "${GREEN}✔ proot-distro already installed${NC}\n"
 else
@@ -63,7 +76,9 @@ else
     progress_bar 0.01 "Installing dialog" "pkg install -y dialog"
 fi
 
+
 # ===================== UBUNTU =====================
+
 echo -e "${CYAN}Checking Ubuntu installation...${NC}"
 
 if proot-distro list --installed 2>/dev/null | grep -qx "ubuntu"; then
@@ -72,26 +87,41 @@ else
     progress_bar 0.01 "Installing Ubuntu" "proot-distro install ubuntu"
 fi
 
-# ===================== CODE SERVER =====================
-progress_bar 0.01 "Setting up Code-Server" "
-proot-distro login ubuntu -- bash -c \"
-set -e
+
+# ===================== DOWNLOAD CODE SERVER =====================
+
+progress_bar 0.01 "Downloading Code Server" "
+cd \$HOME &&
+if [ ! -d \"$CS_DIR\" ]; then
+wget -q \"$CS_URL\" &&
+tar -xf \"$CS_FILE\" &&
+rm \"$CS_FILE\"
+else
+echo 'Code-server already exists'
+fi
+"
+
+
+# ===================== UBUNTU DEPENDENCIES =====================
+
+progress_bar 0.01 "Preparing Ubuntu environment" "
+proot-distro login ubuntu -- bash -c '
 apt update -y
 apt upgrade -y
 apt install -y wget tar curl jq gzip
-cd ~
-
-if [ ! -d '$CS_DIR' ]; then
-    wget -q '$CS_URL'
-    tar -xf '$CS_DIR.tar.gz'
-else
-    echo 'Code-server already exists'
-curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
-fi
-\"
+'
 "
 
+
+# ===================== COPILOT INSTALL =====================
+
+proot-distro login ubuntu -- bash -c "
+curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
+"
+
+
 # ===================== MENU SCRIPT =====================
+
 cat > "$MENU_FILE" << EOF
 #!/bin/bash
 
@@ -134,50 +164,62 @@ while true; do
         4 "Exit")
 
     case \$choice in
+
         1)
             clear
             echo -e "\${YELLOW}Starting Code Server...\${NC}"
+
             proot-distro login ubuntu -- bash -c "
-cd ~/\$CS_DIR/bin
-export PASSWORD=\$PASSWORD
+cd ~/$CS_DIR/bin
+export PASSWORD=$PASSWORD
 nohup ./code-server > ~/code-server.log 2>&1 &
 "
+
             echo -e "\${GREEN}Running → http://localhost:8080\${NC}"
             read -p 'Press Enter...'
-            ;;
+        ;;
+
         2)
             clear
             echo -e "\${BLUE}Debug Mode (Ctrl+C to stop)\${NC}"
+
             proot-distro login ubuntu -- bash -c "
-cd ~/\$CS_DIR/bin
-export PASSWORD=\$PASSWORD
+cd ~/$CS_DIR/bin
+export PASSWORD=$PASSWORD
 ./code-server
 "
-            ;;
+        ;;
+
         3)
             clear
             echo -e "\${RED}Stopping Code Server...\${NC}"
             proot-distro login ubuntu -- pkill -f code-server || true
             echo "Stopped (if running)."
             read -p 'Press Enter...'
-            ;;
+        ;;
+
         4)
             clear
             exit 0
-            ;;
+        ;;
+
     esac
 done
 EOF
 
+
 chmod +x "$MENU_FILE"
 
+
 # ===================== LAUNCHER =====================
+
 cat > "$LAUNCHER" << EOF
 #!/bin/bash
 bash "$MENU_FILE"
 EOF
 
 chmod +x "$LAUNCHER"
+
 
 bold "\n✅ Installation complete!"
 echo -e "${GREEN}Type 'vscode' to open the control panel.${NC}\n"

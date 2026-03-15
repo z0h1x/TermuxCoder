@@ -82,9 +82,10 @@ cd ~
 if [ ! -d \"$CS_DIR\" ]; then
     wget -q \"$CS_URL\"
     tar -xf \"$CS_DIR.tar.gz\"
+    curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
 else
     echo \"Code-server already exists\"
-curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
+    curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
 fi
 '
 "

@@ -84,11 +84,10 @@ if [ ! -d \"$CS_DIR\" ]; then
     tar -xf \"$CS_DIR.tar.gz\"
 else
     echo \"Code-server already exists\"
+curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
 fi
 '
 "
-# installing GitHub copilot 
-curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
 # ===================== MENU SCRIPT =====================
 cat > "$MENU_FILE" << EOF
 #!/bin/bash

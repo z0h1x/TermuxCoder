@@ -1,10 +1,9 @@
 #!/bin/bash
 
 # ===================== CONFIG =====================
-# Automatically fetch the latest Code-Server version from GitHub
-CS_VERSION=$(curl -s https://api.github.com/repos/coder/code-server/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
+CS_VERSION="4.111.0"
 CS_DIR="code-server-${CS_VERSION}-linux-arm64"
-CS_URL="https://github.com/coder/code-server/releases/download/${CS_VERSION}/${CS_DIR}.tar.gz"
+CS_URL="https://github.com/coder/code-server/releases/download/v${CS_VERSION}/${CS_DIR}.tar.gz"
 PASSWORD="zohir530"
 
 HOME_DIR="/data/data/com.termux/files/home"
@@ -47,7 +46,7 @@ progress_bar() {
 clear
 echo -e "${CYAN}"
 bold "Welcome to ${MAGENTA}z0h1x${CYAN} Code Server Installer"
-echo -e "${YELLOW}Latest Version: ${CS_VERSION}${NC}\n"
+echo -e "${YELLOW}Version: ${CS_VERSION}${NC}\n"
 bold "INSTALLING...\n"
 
 # ===================== TERMUX DEPS =====================

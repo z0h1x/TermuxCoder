@@ -1,10 +1,17 @@
 #!/bin/bash
 
 # ===================== CONFIG =====================
+# Automatically fetch the latest Code-Server version from GitHub
+CS_VERSION=$(curl -s https://api.github.com/repos/coder/code-server/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
+CS_DIR="code-server-${CS_VERSION}-linux-arm64"
+CS_URL="https://github.com/coder/code-server/releases/download/${CS_VERSION}/${CS_DIR}.tar.gz"
+PASSWORD="zohir530"
+
 HOME_DIR="/data/data/com.termux/files/home"
 BIN_DIR="/data/data/com.termux/files/usr/bin"
 MENU_FILE="$HOME_DIR/zohir"
 LAUNCHER="$BIN_DIR/vscode"
+# =================================================
 
 # Colors
 GREEN='\033[0;32m'
@@ -29,7 +36,10 @@ progress_bar() {
         sleep "$duration"
     done
     echo
+
+    # IMPORTANT: do NOT exit on failure
     eval "$command" || echo -e "${YELLOW}⚠ Skipped / already done${NC}"
+
     echo -e "${GREEN}✔ Done${NC}\n"
 }
 
@@ -37,16 +47,8 @@ progress_bar() {
 clear
 echo -e "${CYAN}"
 bold "Welcome to ${MAGENTA}z0h1x${CYAN} Code Server Installer"
-echo -e "${YELLOW}Fetching the latest Code-Server version...${NC}\n"
-
-# ===================== FETCH LATEST CODE-SERVER =====================
-CS_LATEST_JSON=$(curl -s "https://api.github.com/repos/coder/code-server/releases/latest")
-CS_VERSION=$(echo "$CS_LATEST_JSON" | grep -Po '"tag_name": "\K.*?(?=")')
-CS_DIR="code-server-${CS_VERSION}-linux-arm64"
-CS_URL="https://github.com/coder/code-server/releases/download/${CS_VERSION}/${CS_DIR}.tar.gz"
-PASSWORD="zohir530"
-
-echo -e "${CYAN}Latest version: ${MAGENTA}$CS_VERSION${NC}\n"
+echo -e "${YELLOW}Latest Version: ${CS_VERSION}${NC}\n"
+bold "INSTALLING...\n"
 
 # ===================== TERMUX DEPS =====================
 if command -v proot-distro &>/dev/null; then
@@ -63,6 +65,7 @@ fi
 
 # ===================== UBUNTU =====================
 echo -e "${CYAN}Checking Ubuntu installation...${NC}"
+
 if proot-distro list --installed 2>/dev/null | grep -qx "ubuntu"; then
     echo -e "${GREEN}✔ Ubuntu already installed — skipping${NC}\n"
 else
@@ -70,23 +73,22 @@ else
 fi
 
 # ===================== CODE SERVER =====================
-progress_bar 0.01 "Setting up Code-Server" "proot-distro login ubuntu -- bash -c '
+progress_bar 0.01 "Setting up Code-Server" "
+proot-distro login ubuntu -- bash -c '
 set -e
 apt update -y
 apt upgrade -y
 apt install -y wget tar
-apt install curl -y
-apt install jq -y
-apt install gzip -y
 cd ~
+
 if [ ! -d \"$CS_DIR\" ]; then
     wget -q \"$CS_URL\"
     tar -xf \"$CS_DIR.tar.gz\"
 else
     echo \"Code-server already exists\"
 fi
-curl -fsSL https://raw.githubusercontent.com/sunpix/howto-install-copilot-in-code-server/refs/heads/main/install-copilot.sh | bash
-'"
+'
+"
 
 # ===================== MENU SCRIPT =====================
 cat > "$MENU_FILE" << EOF
@@ -95,34 +97,41 @@ cat > "$MENU_FILE" << EOF
 CS_DIR="$CS_DIR"
 PASSWORD="$PASSWORD"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+RED='\\033[0;31m'
+GREEN='\\033[0;32m'
+YELLOW='\\033[0;33m'
+BLUE='\\033[0;34m'
+CYAN='\\033[0;36m'
+NC='\\033[0m'
 
-center_text() { local w=\$(tput cols); while IFS= read -r line; do printf "%*s%s\n" \$(((w-\${#line})/2)) "" "\$line"; done }
+center_text() {
+    local w=\$(tput cols)
+    while IFS= read -r line; do
+        printf "%*s%s\n" \$(((w-\${#line})/2)) "" "\$line"
+    done
+}
 
 banner='
- ███████╗░█████╗░██╗░░██╗░░███╗░░██╗░░██╗
- ╚════██║██╔══██╗██║░░██║░████║░░╚██╗██╔╝
- ░░███╔═╝██║░░██║███████║██╔██║░░░╚███╔╝░
- ██╔══╝░░██║░░██║██╔══██║╚═╝██║░░░██╔██╗░
- ███████╗╚█████╔╝██║░░██║███████╗██╔╝╚██╗
- ╚══════╝░╚════╝░╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝
+███████╗░█████╗░██╗░░██╗░░███╗░░██╗░░██╗
+╚════██║██╔══██╗██║░░██║░████║░░╚██╗██╔╝
+░░███╔═╝██║░░██║███████║██╔██║░░░╚███╔╝░
+██╔══╝░░██║░░██║██╔══██║╚═╝██║░░░██╔██╗░
+███████╗╚█████╔╝██║░░██║███████╗██╔╝╚██╗
+╚══════╝░╚════╝░╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝
 '
 
 while true; do
     clear
-    echo -e "${CYAN}"
-    echo "$banner" | center_text
-    echo -e "${NC}"
+    echo -e "\${CYAN}"
+    echo "\$banner" | center_text
+    echo -e "\${NC}"
+
     choice=\$(dialog --stdout --menu "z0h1x Control Panel" 15 60 6 \
         1 "Start Code Server" \
         2 "Debug Mode (Verbose)" \
         3 "Stop Code Server" \
         4 "Exit")
+
     case \$choice in
         1)
             clear
@@ -132,12 +141,12 @@ cd ~/\$CS_DIR/bin
 export PASSWORD=\$PASSWORD
 nohup ./code-server > ~/code-server.log 2>&1 &
 "
-            echo -e "${GREEN}Running → http://localhost:8080${NC}"
+            echo -e "\${GREEN}Running → http://localhost:8080\${NC}"
             read -p 'Press Enter...'
             ;;
         2)
             clear
-            echo -e "${BLUE}Debug Mode (Ctrl+C to stop)${NC}"
+            echo -e "\${BLUE}Debug Mode (Ctrl+C to stop)\${NC}"
             proot-distro login ubuntu -- bash -c "
 cd ~/\$CS_DIR/bin
 export PASSWORD=\$PASSWORD
@@ -146,7 +155,7 @@ export PASSWORD=\$PASSWORD
             ;;
         3)
             clear
-            echo -e "${RED}Stopping Code Server...${NC}"
+            echo -e "\${RED}Stopping Code Server...\${NC}"
             proot-distro login ubuntu -- pkill -f code-server || true
             echo "Stopped (if running)."
             read -p 'Press Enter...'

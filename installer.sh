@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ===================== CONFIG =====================
-CS_VERSION="4.111.0"
+CS_VERSION="4.135.0"
 CS_DIR="code-server-${CS_VERSION}-linux-arm64"
 CS_URL="https://github.com/coder/code-server/releases/download/v${CS_VERSION}/${CS_DIR}.tar.gz"
 PASSWORD="zohir530"

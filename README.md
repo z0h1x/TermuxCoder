@@ -63,4 +63,4 @@ vscode
 
 - [@Coder](https://github.com/coder) - thanks to him for making **code server**
 ## 🔗 Links
-[![Instagram](https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/_z0h1x)
+[![Instagram](https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/z0h1xx)

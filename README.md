@@ -1,4 +1,4 @@
-# TermuxCoder 4.111.0 updated 😼
+# TermuxCoder v4.135.0 updated 😼
 
 **TermuxCoder** is a simple installer for Visual Studio Code (Code-Server) on Termux. Get your dev environment up and running in minutes, straight from your terminal.
 
@@ -10,7 +10,7 @@
 
 - Easy installation process 
 - User Friendly
-- Fully updated to CodeServer 4.111.0
+- Fully updated to CodeServer 4.135.0 ( latest )
 - android 7+
 
 ---
